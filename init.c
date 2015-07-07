@@ -189,6 +189,17 @@ static int tftpInited    = 1; /* initialization done by application itself */
 #include <bsp/bspExt.h>
 #endif
 
+#ifdef RSH_SUPPORT
+#include <rsh.h>
+
+/* override chdir with rshwrapper function */
+#define chdir cd
+#define ROOT_DIR root
+
+#else
+#define ROOT_DIR "/"
+#endif
+
 #if defined(HAVE_BSP_EXCEPTION_EXTENSION)
 #include <bsp/bspException.h>
 
@@ -223,10 +234,6 @@ cexpExcHandlerInstall(void (*handler)(int))
 #ifdef USE_TECLA
 int
 ansiTiocGwinszInstall(int slot);
-#endif
-
-#ifdef RSH_SUPPORT
-static int rshCopy(char **pDfltSrv, char *pathspec, char **pFnam);
 #endif
 
 void
@@ -300,13 +307,42 @@ char *buf;
   openlog(0, LOG_PID | LOG_CONS, 0); /* use RTEMS defaults */
 
 #ifdef TFTP_SUPPORT
-  if (rtems_bsdnet_initialize_tftp_filesystem())
-	perror("TFTP FS initialization failed");
+  if (getenv("USETFTP") != NULL)
+  {
+    if (rtems_bsdnet_initialize_tftp_filesystem())
+	  perror("TFTP FS initialization failed");
+  }
 #endif
 
 #ifdef NFS_SUPPORT
-  if ( rpcUdpInit() || nfsInit(0,0) )
-	/* nothing else to do */;
+  if (getenv("USENFS") != NULL)
+  {
+      if ( rpcUdpInit() || nfsInit(0,0) );
+      /* NFS: mount the path of the argument file */
+      {
+        char *nfsServer, *nfsMntPoint;
+
+        nfsServer = getenv("NFSSERVER");
+        nfsMntPoint = getenv("NFSMNTPNT");
+
+        if (nfsServer && nfsMntPoint)
+        {
+          char *cp = nfsMntPoint;
+          while ((cp = strchr(cp+1, '/')) != NULL) 
+          {
+            *cp = '\0';
+            if ((mkdir (nfsMntPoint, 0755) != 0) && (errno != EEXIST))
+            {
+               printf("Can't create directory \"%s\": %s.\n",
+                                               nfsMntPoint, strerror(errno));
+               exit(-1);
+            }
+            *cp = '/';
+          }
+          nfsMount(nfsServer, nfsMntPoint, nfsMntPoint);
+        }
+      }
+  }
 #endif
 
   if ( rtems_bsdnet_ntpserver_count > 0 ) {
@@ -348,6 +384,9 @@ int	result    = 0;
 int	no_net    = 0;
 char	*dfltSrv  = 0;
 char	*pathspec = 0;
+#ifdef RSH_SUPPORT
+char    *root     = 0;
+#endif
 #ifdef NFS_SUPPORT
 MntDescRec	bootmnt = { "/boot", 0, 0 };
 MntDescRec      homemnt = { "/home", 0, 0 };
@@ -450,6 +489,28 @@ char	*argv[7]={
   }
 #endif
 
+#ifdef RSH_SUPPORT
+    if (getenv("USERSH") != NULL)
+    {
+        rsh_setserver(rtems_bsdnet_bootp_server_name);
+        rsh_iam(getenv("RSHUSER"));
+	    rsh_mount(getenv("HOSTNAME")); /* "mount" the rsh-fs on /hostname */
+/* #if !defined(TFTP_SUPPORT) && !defined(NFS_SUPPORT) */
+	    /* if rsh is the ONLY fs then enable it, else the user should it switch manually on */
+	    rsh_enable(); /* use the rsh-fs */
+/* #endif */
+	    /* note: pwd() and cd() used for path modification: these routines check 
+         if rsh is enabled and call the right depending functions. default user
+         is 'ioc'. Use rsh_iam() to register a different user for remote calls.
+         rsh_whoaim() prints the current user */
+	 root = malloc(strlen(getenv("HOSTNAME")) + 2);
+	 sprintf(root, "/%s", getenv("HOSTNAME"));
+    } else
+    {
+    	root = strdup("/");
+    }
+#endif
+
 #ifndef CDROM_IMAGE
   if ( BOOTPFN ) {
 	char *slash,*dot;
@@ -498,8 +559,6 @@ char	*argv[7]={
   path_prefix = strdup("/TFTP/BOOTP_HOST/");
 #elif defined(NFS_SUPPORT)
   path_prefix = strdup(":/remote/rtems:");
-#elif defined(RSH_SUPPORT)
-  path_prefix = strdup("~rtems/");
 #endif
   getDfltSrv(&dfltSrv);
 
@@ -531,9 +590,9 @@ char	*argv[7]={
 
 
   do {
-	chdir("/");
+	chdir(ROOT_DIR);
 #ifdef NFS_SUPPORT
-	if ( releaseMount( &bootmnt ) ) {
+     if (getenv("USENFS") != NULL) if ( releaseMount( &bootmnt ) ) {
 		fprintf(stderr,"Unable to unmount /boot NFS - don't know what to do, sorry\n");
 		break;
 	}
@@ -550,13 +609,13 @@ char	*argv[7]={
 	do {
 		printf("Symbol file can be loaded by:\n");
 #ifdef NFS_SUPPORT
-		printf("   NFS: [<uid>.<gid>@][<host>]:<export_path>:<symfile_path>\n");
+		if (getenv("USENFS") != NULL) printf("   NFS: [<uid>.<gid>@][<host>]:<export_path>:<symfile_path>\n"); 
 #endif
 #ifdef TFTP_SUPPORT
-		printf("  TFTP: [/TFTP/<host_ip>]<symfile_path>\n");
+        if (getenv("USETFTP") != NULL) printf("  TFTP: [/TFTP/<host_ip>]<symfile_path>\n"); 
 #endif
 #ifdef RSH_SUPPORT
-		printf("   RSH: [<host>:]~<user>/<symfile_path>\n");
+		if (getenv("USERSH") != NULL) printf("   RSH: <symfile_abs_path_on_host>\n"); 
 #endif
 #ifdef USE_TECLA
 		bufp = gl_get_line(gl, "Enter Symbol File Name: ",
@@ -595,19 +654,15 @@ firstTimeEntry:
 
 #ifdef TFTP_SUPPORT
 		case TFTP_PATH:
-			fd = isTftpPath( &dfltSrv, pathspec, &ed, &symf );
+            if (getenv("USETFTP") != NULL)
+			  fd = isTftpPath( &dfltSrv, pathspec, &ed, &symf );
 		break;
 #endif
 
 #ifdef NFS_SUPPORT
 		case NFS_PATH:
-    		fd = isNfsPath( &dfltSrv, pathspec, &ed, &symf, &bootmnt );
-		break;
-#endif
-
-#ifdef RSH_SUPPORT
-		case RSH_PATH:
-    		fd = rshCopy( &dfltSrv, pathspec, &symf );
+    		if (getenv("USENFS") != NULL)
+              fd = isNfsPath( &dfltSrv, pathspec, &ed, &symf, &bootmnt );
 		break;
 #endif
 
@@ -639,9 +694,6 @@ continue;
 	freeps( &sysscr );
 	sysscr = strdup(SYSSCRIPT);
 
-#if defined(RSH_SUPPORT) && !defined(CDROM_IMAGE)
-	if ( !ISONTMP(symf) ) {
-#endif
 		if ( (slash = strrchr(symf,'/')) ) {
 			int ch=*(slash+1);
 			*(slash+1)=0;
@@ -651,27 +703,6 @@ continue;
 			fputc('\n',stdout);
 			*(slash+1)=ch;
 		}
-#if defined(RSH_SUPPORT) && !defined(CDROM_IMAGE)
-	} else {
-		char *scrspec = malloc( strlen(pathspec) + strlen(SYSSCRIPT) + 1);
-
-		strcpy(scrspec, pathspec);
-		if ( (slash = strrchr(scrspec, '/')) )
-			strcpy( slash+1, SYSSCRIPT );
-		else
-			strcpy( scrspec, SYSSCRIPT );
-
-		getDfltSrv( &dfltSrv );
-
-		freeps( &sysscr );
-		if ( (fd = rshCopy( &dfltSrv, scrspec, &sysscr )) >= 0 ) {
-			close( fd );
-		} else {
-			freeps( &sysscr );
-		}
-		freeps(&scrspec);
-	}
-#endif
 
 bare_entry:
 	printf("Trying symfile '%s', system script '%s'\n",
@@ -729,22 +760,23 @@ shell_entry:
 			switch ( pathType( pathspec ) ) {
 #ifdef NFS_SUPPORT
 				case NFS_PATH:
-					if ( 0 == (rc = isNfsPath( &dfltSrv, pathspec, 0, &user_script, &homemnt ) ) ) {
-						/* valid NFS path; try to mount; */
-						if ( !bootmnt.uidhost || strcmp( homemnt.uidhost, bootmnt.uidhost ) ||
-						     !bootmnt.rpath   || strcmp( homemnt.rpath  , bootmnt.rpath   ) )
-							rc = nfsMount(homemnt.uidhost, homemnt.rpath, homemnt.mntpt);
-					}
+                    if (getenv("USENFS") != NULL)
+                    { 
+					    if ( 0 == (rc = isNfsPath( &dfltSrv, pathspec, 0, &user_script, &homemnt ) ) ) {
+						    /* valid NFS path; try to mount; */
+						    if ( !bootmnt.uidhost || strcmp( homemnt.uidhost, bootmnt.uidhost ) ||
+						         !bootmnt.rpath   || strcmp( homemnt.rpath  , bootmnt.rpath   ) )
+							    rc = nfsMount(homemnt.uidhost, homemnt.rpath, homemnt.mntpt);
+					    }
+                    }
 				break;
 #endif
-				case RSH_PATH:
-					fprintf(stderr,"RSH download of user scripts is not supported\n");
-					rc = -1;
-				break;
 
 #ifdef TFTP_SUPPORT
 				case TFTP_PATH:
-					rc = isTftpPath( &dfltSrv, pathspec, 0, &user_script );
+                    if (getenv("USETFTP") != NULL)
+					    rc = isTftpPath( &dfltSrv, pathspec, 0, &user_script );
+                    else rc = -1;
 				break;
 #endif
 
@@ -790,9 +822,9 @@ shell_entry:
 			argc=1;
   			freeps(&user_script);
 		} while (!result || CEXP_MAIN_NO_SCRIPT==result);
-		chdir("/");
+		chdir(ROOT_DIR);
 #ifdef NFS_SUPPORT
-		releaseMount( &homemnt );
+        if (getenv("USENFS") != NULL) releaseMount( &homemnt );
 #endif
 	}
   }
@@ -848,123 +880,6 @@ char	*cp;
 done:
 	*cp=0;
     return rval;
-}
-#endif
-
-#ifdef RSH_SUPPORT
-static int cpfd(int *pi, int o)
-{
-int  got,put,n;
-char buf[BUFSIZ];
-char *b = buf;
-
-	if ( (got = read( *pi, buf, sizeof(buf) )) < 0 ) {
-		fprintf(stderr,"rshCopy() -- cpfd unable to read");
-		return -1;
-	}
-
-	if ( 0 == got ) {
-		close(*pi);
-		*pi = -1;
-		return 0;
-	}
-
-	b = buf;
-
-	for ( b = buf, n = got; n > 0; n-=put, b+=put ) {
-		if ( (put = write(o, b, n)) <= 0 ) {
-			fprintf(stderr,"rshCopy() -- cpfd unable to write");
-			return -1;
-		}
-	}
-	return got;
-}
-
-static int rshCopy(char **pDfltSrv, char *pathspec, char **pFnam)
-{
-int		fd = -1, ed = -1, tmpfd = -1, maxfd, got;
-fd_set	r,w,e;
-struct timeval timeout;
-
-int rval = -1;
-
-	fd = isRshPath( pDfltSrv, pathspec, &ed, 0 );
-	if ( fd < 0 ) {
-		rval = fd;
-		goto cleanup;
-	}
-
-	assert( !*pFnam );
-
-	*pFnam = strdup("/tmp/rshcpyXXXXXX");
-
-   	if ( (tmpfd=mkstemp(*pFnam)) < 0 ) {
-		perror("rshCopy() -- creating scratch file");
-		goto cleanup;
-	}
-
-	while ( fd >= 0 || ed >= 0 ) {
-
-		FD_ZERO( &r ); FD_ZERO( &w ); FD_ZERO( &e );
-		timeout.tv_sec  = 5;
-		timeout.tv_usec = 0;
-
-		maxfd = 0;
-
-		if ( fd >= 0 ) {
-			FD_SET( fd, &r );
-			if ( fd > maxfd )
-				maxfd = fd;
-		}
-		if ( ed >= 0 ) {
-			FD_SET( ed, &r );
-			if ( ed > maxfd )
-				maxfd = ed;
-		}
-		maxfd++;
-
-		got = select(maxfd, &r, &w, &e, &timeout);
-
-		if ( got <= 0 ) {
-			if ( got )
-				perror("rshCopy() network select() error");
-			else
-				fprintf(stderr,"rshCopy() network select() timeout\n");
-			goto cleanup;
-		}
-		if ( ed >= 0 && FD_ISSET( ed, &r ) ) {
-			if ( cpfd( &ed, 2 ) < 0 ) {
-				perror(" error file descriptor");
-				goto cleanup;
-			}
-		}
-		if ( fd >= 0 && FD_ISSET( fd, &r ) ) {
-			if ( cpfd( &fd, tmpfd ) < 0 ) {
-				perror(" temp file descriptor");
-				goto cleanup;
-			}
-		}
-	}
-
-	rval = tmpfd; tmpfd = -1;
-
-cleanup:
-
-	if ( ed >= 0 )
-		close(ed);
-
-	if ( fd >= 0 )
-		close(fd);
-
-	if ( tmpfd >= 0 ) {
-		close(tmpfd);
-		unlink( *pFnam );
-	}
-
-	if ( rval < 0 )
-		freeps(pFnam);
-
-	return rval;
 }
 #endif
 

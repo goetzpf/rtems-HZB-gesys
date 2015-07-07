@@ -1,5 +1,3 @@
-#define RSH_CMD			"cat "					/* Command for loading the image using RSH */
-
 #define DFLT_FNAME		dflt_fname
 
 #define UNSUP_PATH	(-1)
@@ -12,12 +10,6 @@
 #define TFTP_PATH	1
 #else
 #define TFTP_PATH	UNSUP_PATH
-#endif
-
-#ifdef RSH_SUPPORT
-#define RSH_PATH	2
-#else
-#define RSH_PATH	UNSUP_PATH
 #endif
 
 #ifdef NFS_SUPPORT
@@ -58,22 +50,6 @@ int help = 0, rc;
 	if ( slash && slash == path )
 		return LOCAL_PATH;
 
-	/*
-	 * tilde must be present and it must either follow the colon or must be the
-	 * first character.
-	 * Sanity: 
-	 *   - the first slash must occur after the
-	 *   - 'at' sign, if present, must occur after tilde.
-	 */
-	if ( tild && ( !slash || slash > tild ) ) {
-		if (  tild == (col1 ? col1 + 1 : path)   &&
-              ( !at || at > tild ) )
-			return RSH_PATH;
-		else {
-			/* sanity check failed; print info but continue */
-			help = 1;
-		}
-	}
 
 	/* NFS:  two colons must be present; slash must follow the first colon
 	 *       at, if present, must be less than first colon.
@@ -91,13 +67,13 @@ int help = 0, rc;
 		fprintf(stderr,"\nYou specified a possibly ill-formed remote path; trying local...\n");
 		fprintf(stderr,"Valid pathspecs are:\n");
 #ifdef NFS_SUPPORT
-		fprintf(stderr,"   NFS: [<uid>.<gid>@][<host>]:<export_path>:<symfile_path>\n"); 
+		if (getenv("USENFS") != NULL) fprintf(stderr,"   NFS: [<uid>.<gid>@][<host>]:<export_path>:<symfile_path>\n"); 
 #endif
 #ifdef TFTP_SUPPORT
-		fprintf(stderr,"  TFTP: [/TFTP/<host_ip>]<symfile_path>\n"); 
+		if (getenv("USETFTP") != NULL) fprintf(stderr,"  TFTP: [/TFTP/<host_ip>]<symfile_path>\n"); 
 #endif
 #ifdef RSH_SUPPORT
-		fprintf(stderr,"   RSH: [<host>:]~<user>/<symfile_path>\n"); 
+		if (getenv("USERSH") != NULL) fprintf(stderr,"   RSH: <symfile_abs_path_on_host>\n"); 
 #endif
 	}
 	return LOCAL_PATH;
@@ -196,7 +172,7 @@ char *fn   = 0;
 
 #define IDOT_STR_LEN	20	/* enough to hold an IP4 dotted address or "BOOTP_HOST" */
 
-#if defined(RSH_SUPPORT) || defined(NFS_SUPPORT)
+#if defined(NFS_SUPPORT)
 static int
 srvCheck(char **srvname, char *path)
 {
@@ -227,9 +203,7 @@ char			buf[IDOT_STR_LEN];	/* enough to hold a 'dot-notation' ip addr */
 	}
 	return 0;
 }
-#endif
 
-#if defined(NFS_SUPPORT)
 #define MDESC_FLG_OWN_STRING (1<<0)
 
 typedef struct MntDesc_ {
@@ -422,103 +396,6 @@ cleanup:
 }
 #endif
 
-#if defined(RSH_SUPPORT)
-extern int rcmd();
-
-#define RSH_PORT	514
-
-#ifndef RSH_BUFSZ
-#ifdef NVRAM_UCDIMM
-#define RSH_BUFSZ   (1024*1024*8)
-#else
-#define RSH_BUFSZ	(1024*1024*20)
-#endif
-#endif
-
-static int isRshPath(char **srvname, char *opath, int *perrfd, char **thepathp)
-{
-int	fd = -1;
-char *username, *fn = 0, *tmp;
-char *tild = 0, *col1 = 0;
-char *cmd  = 0;
-char *path = 0;
-
-	if ( perrfd )
-		*perrfd = -1;
-
-	if ( !(path = buildPath(RSH_PATH, opath, path_prefix)) ) {
-		return -11;
-	}
-
-	col1 = strchr(path,':');
-	tild = strchr(path,'~');
-
-	if ( !col1 && !*srvname ) {
-		fprintf(stderr,"No default server; specify '<server>:~<user>/<path'\n");
-		fd = -10;
-		goto cleanup;
-	}
-
-	if (col1) {
-		*col1 = 0;
-	}
-	*tild = 0;
-
-	/* they gave us user name */
-	username=tild+1;
-
-	if ((tmp=strchr(username,'/'))) {
-		*(tmp++)=0;
-	}
-
-	if ( srvCheck( srvname, path ) )
-		goto cleanup;
-	
-	fprintf(stderr,"Loading as '%s' from '%s' using RSH\n",username, *srvname);
-
-	fn = fnCheck(tmp);
-
-	/* cat filename to command */
-	cmd = malloc(strlen(RSH_CMD)+strlen(fn)+1);
-	sprintf(cmd,"%s%s",RSH_CMD,fn);
-
-	{
-	char *willbechanged = *srvname;
-	fd=rcmd(&willbechanged, RSH_PORT, username,username,cmd,perrfd);
-	}
-
-	if ( perrfd ) {
-		if (fd<0) {
-			fprintf(stderr,"rcmd"/* (%s)*/": got no remote stdout descriptor\n"
-							/* ,strerror(errno)*/);
-			if ( *perrfd >= 0 )
-				close( *perrfd );
-			*perrfd = -1;
-		} else if ( *perrfd<0 ) {
-			fprintf(stderr,"rcmd"/* (%s)*/": got no remote stderr descriptor\n"
-							/* ,strerror(errno)*/);
-			if ( fd>=0 )
-				close( fd );
-			fd = -1;
-		}
-	} else {
-		/* don't actually do anything but signal success */
-		fd = 0;
-	}
-
-	/* are they interested in the path ? */
-	if ( thepathp ) {
-		*thepathp = malloc(strlen(*srvname) + 2 + strlen(username) + 1 + strlen(fn) + 1);
-		sprintf(*thepathp,"%s:~%s/%s",*srvname,username,fn);
-	}
-
-cleanup:
-	free( fn   );
-	free( path );
-	free( cmd  );
-	return fd;
-}
-#endif
 
 #if defined(TFTP_SUPPORT)
 static int isTftpPath(char **srvname, char *opath, int *perrfd, char **thepathp)

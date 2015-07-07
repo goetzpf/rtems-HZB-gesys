@@ -30,13 +30,10 @@ USE_NFS        = NO
 # initialization scripts can be loaded using TFTP
 USE_TFTPFS     = YES
 
-# Include RSH support for downloading the system symbol
-# table and a system initialization script (user level
-# script not supported).
-# NOTE: RSH support is NOT a filesystem but just downloads
-#       the essential files (symfile and script) to the IMFS,
-#       i.e., NO path is available to the script.
-USE_RSH        = NO
+# Include full RSH support
+USE_RSH        = YES
+RSH_CHECK_CRC  = NO
+RSH_DEBUG      = NO
 
 # Whether the Cexp symbol table should be built into the executable ('YES')
 # If 'NO', cexp has to read the symbol table from a separate (.sym) file.
@@ -91,6 +88,8 @@ INCLUDE_LISTS+=$(wildcard config/*.incl)
 # This should be NO on 4.6.0 and later.
 USE_GC=NO
 
+USE_RSH_YES_VPATH = rsh
+VPATH += $(USE_RSH_$(USE_RSH)_VPATH)
 
 # C source names, if any, go here -- minus the .c
 # make a system for storing in flash. The compressed binary
@@ -103,7 +102,14 @@ USE_GC=NO
 
 # Normal (i.e. non-flash) system which can be net-booted
 USE_TECLA_YES_C_PIECES = term
-C_PIECES=init rtems_netconfig config addpath ctrlx $(USE_TECLA_$(USE_TECLA)_C_PIECES)
+USE_RSH_CRC_YES_C_PIECES = rsh_crc
+USE_RSH_YES_C_PIECES = rsh_basic rsh_driver rsh_node rsh_files rsh $(USE_RSH_CRC_$(RSH_CHECK_CRC)_C_PIECES)
+RSH_CRC_DEFINES_YES = -DCRCCHECK
+RSH_DEBUG_DEFINES_YES = -DDEBUGMSG
+RSH_DEFINES_YES = $(RSH_CRC_DEFINES_$(RSH_CHECK_CRC)) $(RSH_DEBUG_DEFINES_$(RSH_DEBUG))
+DEFINES += $(RSH_DEFINES_$(USE_RSH)) -DRTEMS_TA=\"RTEMS-$(RTEMS_BSP)\"
+
+C_PIECES=init rtems_netconfig config addpath ctrlx shellcommands $(USE_TECLA_$(USE_TECLA)_C_PIECES) $(USE_RSH_$(USE_RSH)_C_PIECES)
 C_PIECES_USE_RTC_DRIVER_YES=missing
 C_PIECES+=$(C_PIECES_USE_RTC_DRIVER_$(USE_RTC_DRIVER))
 
@@ -230,6 +236,12 @@ ifeq "$(RTEMS_BSP)" "beatnik"
 DEFINES+=-DMEMORY_HUGE
 endif
 
+ifneq "$(filter $(RTEMS_BSP),mvme2100 mvme3100 mvme5500)xx" "xx"
+C_PIECES += bootParams netsetup
+LD_LIBS  += -lbootLib
+DEFINES  += -DBSP_NETWORK_SETUP=gen_network_setup
+endif
+
 ifeq  "$(RTEMS_BSP_FAMILY)" "pc386"
 USE_BSPEXT = NO
 ifeq  "$(USE_BSDNETDRVS)"   "YES"
@@ -322,7 +334,7 @@ CFLAGS_DEFAULT = -Wall -g3
 USE_TECLA_YES_DEFINES  = -DWINS_LINE_DISC -DUSE_TECLA
 USE_NFS_YES_DEFINES    = -DNFS_SUPPORT
 USE_TFTPFS_YES_DEFINES = -DTFTP_SUPPORT
-USE_RSH_YES_DEFINES    = -DRSH_SUPPORT
+USE_RSH_YES_DEFINES    = -Irsh -DRSH_SUPPORT
 
 DEFINES+=$(USE_TECLA_$(USE_TECLA)_DEFINES)
 DEFINES+=$(USE_NFS_$(USE_NFS)_DEFINES)
