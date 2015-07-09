@@ -48,7 +48,7 @@ char                     c;
 	/* Do special processing only in canonical mode
 	 * (e.g., do not do special processing during ansiQuery...
 	 */
-	if ( (tty->termios.c_lflag & ICANON) ) {
+	/*if ( (tty->termios.c_lflag & ICANON) ) */ {
 
 		/* did they just press Ctrl-X? */
 		if (rebootChar == ch) {
@@ -68,7 +68,6 @@ char                     c;
 			}
 		}
 	}
-
 	/* Unfortunately, there is no way for a line discipline
 	 * method (and we are in 'l_rint' at this point) to instruct
 	 * termios to continue 'normal' processing.
@@ -120,8 +119,10 @@ int             rval = -EINVAL;
 		return rval;
     }
 
-	if (magicChar)
-		rebootChar=magicChar;
+	if (magicChar) {
+		rebootChar = magicChar;
+		resetFun = reset_fun;
+    }
 
 	/* now install our 'Ctrl-X' hack, so they can abort anytime while
 	 * network lookup and/or loading is going on...

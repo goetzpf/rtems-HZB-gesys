@@ -454,6 +454,13 @@ char	*argv[7]={
 		 ansiTiocGwinszInstall(7) ? "failed" : "ok");
 #endif
 
+#ifdef RESETFUNC
+#ifdef RESETFUNCDECL
+  RESETFUNCDECL;
+#endif
+  installConsoleCtrlXHack(24, RESETFUNC); /* CTRL-X = 24 */
+#endif
+
   /*
    * Make sure the time-of-day clock is at least initialized.
    * The dummy routine just sets the date to 1/1/2000

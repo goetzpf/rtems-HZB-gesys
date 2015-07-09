@@ -236,6 +236,15 @@ ifeq "$(RTEMS_BSP)" "beatnik"
 DEFINES+=-DMEMORY_HUGE
 endif
 
+ifneq "$(filter $(RTEMS_BSP),mvme2100 mvme5500)xx" "xx"
+DEFINES  += "-DRESETFUNCDECL=extern int vmeUniverseResetBus()"
+DEFINES  += -DRESETFUNC='vmeUniverseResetBus'
+endif
+
+ifeq "$(RTEMS_BSP)" "mvme3100"
+DEFINES  += -DRESETFUNC='bsp_reset'
+endif
+
 ifneq "$(filter $(RTEMS_BSP),mvme2100 mvme3100 mvme5500)xx" "xx"
 C_PIECES += bootParams netsetup
 LD_LIBS  += -lbootLib
