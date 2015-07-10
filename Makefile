@@ -24,7 +24,7 @@ USE_BSDNETDRVS = $(shell if test -d ../bsd_eth_drivers; then echo YES ; else ech
 
 # Include NFS support; system symbol table and initialization
 # scripts can be loaded using NFS
-USE_NFS        = NO
+USE_NFS        = YES
 
 # Include TFTP filesystem support; system symbol table and
 # initialization scripts can be loaded using TFTP
