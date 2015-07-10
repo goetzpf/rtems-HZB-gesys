@@ -1,4 +1,4 @@
-rtems-gesys (2.4-7) unstable; urgency=low
+rtems-gesys (2.4-7~bpo70~hzb1) wheezy; urgency=low
 
   * add full rsh support
   * network setup and bootparms from nvram
