@@ -1,3 +1,15 @@
+rtems-gesys (2.4-7~bpo70~hzb3) wheezy; urgency=low
+
+  * add rtems-dependency rtems-bootlib
+
+ -- Joachim Rahn <Joachim.Rahn@helmholtz-berlin.de>  Fri, 10 Jul 2015 08:40:25 +0200
+
+rtems-gesys (2.4-7~bpo70~hzb2) wheezy; urgency=low
+
+  * NFS enabled
+
+ -- Joachim Rahn <Joachim.Rahn@helmholtz-berlin.de>  Fri, 10 Jul 2015 07:09:39 +0200
+
 rtems-gesys (2.4-7~bpo70~hzb1) wheezy; urgency=low
 
   * add full rsh support

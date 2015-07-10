@@ -9,7 +9,7 @@ Build-Depends: debhelper (>= 7), cdbs, rtems-debhelper,
                rtems-cexp-mvme3100, rtems-libbspext-mvme3100, rtems-bootlib-mvme3100,
                rtems-cexp-mvme5500, rtems-libbspext-mvme5500, rtems-bootlib-mvme5500,
                rtems-cexp-pc386, rtems-bootlib-pc386
-Rtems-Depends: rtems, rtems-libbspext, rtems-cexp
+Rtems-Depends: rtems, rtems-libbspext, rtems-cexp, rtems-bootlib
 Standards-Version: 3.8.0
 Homepage: http://www.slac.stanford.edu/~strauman/rtems/software.html
 
