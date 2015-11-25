@@ -399,8 +399,6 @@ char	*argv[7]={
 	0
 };
 
-  rtems_libio_set_private_env();
-
 #ifdef HAVE_PCIBIOS
 #if RTEMS_VERSION_ATLEAST(4,6,99)
   pci_initialize();
