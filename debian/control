@@ -4,11 +4,11 @@ Priority: extra
 Maintainer: Michael Davidsaver <mdavidsaver@bnl.gov>
 Build-Depends: debhelper (>= 7), cdbs, rtems-debhelper,
                rtems-common (>= 4.9.6-1~),
-               rtems-cexp-mvme2100, rtems-libbspext-mvme2100, rtems-bootlib-mvme2100,
-               rtems-cexp-mvme2307, rtems-libbspext-mvme2307, rtems-bootlib-mvme2307,
-               rtems-cexp-mvme3100, rtems-libbspext-mvme3100, rtems-bootlib-mvme3100,
-               rtems-cexp-mvme5500, rtems-libbspext-mvme5500, rtems-bootlib-mvme5500,
-               rtems-cexp-pc386, rtems-bootlib-pc386
+               rtems-cexp-mvme2100 (>= 2.0b-9~), rtems-libbspext-mvme2100, rtems-bootlib-mvme2100,
+               rtems-cexp-mvme2307 (>= 2.0b-9~), rtems-libbspext-mvme2307, rtems-bootlib-mvme2307,
+               rtems-cexp-mvme3100 (>= 2.0b-9~), rtems-libbspext-mvme3100, rtems-bootlib-mvme3100,
+               rtems-cexp-mvme5500 (>= 2.0b-9~), rtems-libbspext-mvme5500, rtems-bootlib-mvme5500,
+               rtems-cexp-pc386 (>= 2.0b-9~), rtems-bootlib-pc386
 Rtems-Depends: rtems, rtems-libbspext, rtems-cexp, rtems-bootlib
 Standards-Version: 3.8.0
 Homepage: http://www.slac.stanford.edu/~strauman/rtems/software.html
