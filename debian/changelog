@@ -1,12 +1,12 @@
-rtems-gesys (2.4-6~bpo70+hzb5) wheezy; urgency=low
+rtems-gesys (2.4-7~bpo70+hzb5) wheezy; urgency=low
 
+  [ Joachim Rahn ]
   * correction of package version number
     because upstream on debrep is still 2.4-6, 
     +hzb should give higher prio for apt compared to upstream
-
   * merge Dan's last two commits
 
- -- Joachim Rahn <Joachim.Rahn@helmholtz-berlin.de>  Wed, 02 Dec 2015 12:12:26 +0100
+ -- Christoph Schröder <christoph.schroeder@helmholtz-berlin.de>  Wed, 02 Dec 2015 12:12:26 +0100
 
 rtems-gesys (2.4-7~bpo70~hzb4) wheezy; urgency=low
 
