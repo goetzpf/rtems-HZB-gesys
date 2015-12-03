@@ -1,3 +1,9 @@
+rtems-gesys (2.4-7~bpo70+hzb6) wheezy; urgency=medium
+
+  * remove unnecessary dependencies
+
+ -- Christoph Schröder <christoph.schroeder@helmholtz-berlin.de>  Thu, 03 Dec 2015 16:23:34 +0100
+
 rtems-gesys (2.4-7~bpo70+hzb5) wheezy; urgency=low
 
   [ Joachim Rahn ]
