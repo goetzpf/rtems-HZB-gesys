@@ -1,3 +1,9 @@
+rtems-gesys (2.4-6+hzb1) wheezy; urgency=medium
+
+  * change bootlib dependency
+
+ -- Christoph Schröder <christoph.schroeder@helmholtz-berlin.de>  Fri, 11 Dec 2015 12:05:18 +0100
+
 rtems-gesys (2.4-7~bpo70+hzb6) wheezy; urgency=medium
 
   * remove unnecessary dependencies
