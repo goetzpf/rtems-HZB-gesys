@@ -1,3 +1,12 @@
+rtems-gesys (2.4-6+hzb2) wheezy; urgency=medium
+
+  [ Dan Eichel ]
+  * Tick rate decreased from 1kHz to 60Hz (similar to vxWorks)
+
+  [ Christoph Schröder ]
+
+ -- Christoph Schröder <christoph.schroeder@helmholtz-berlin.de>  Mon, 04 Jan 2016 14:27:57 +0100
+
 rtems-gesys (2.4-6+hzb1) wheezy; urgency=medium
 
   * change bootlib dependency
