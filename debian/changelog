@@ -1,3 +1,10 @@
+rtems-gesys (2.4-6+hzb3) wheezy; urgency=medium
+
+  [ Dan Eichel ]
+  * System clock increased from 60Hz up to 100Hz, probably it prevents timing fault issues on EPICS
+
+ -- Christoph Schröder <christoph.schroeder@helmholtz-berlin.de>  Fri, 15 Jan 2016 10:29:12 +0100
+
 rtems-gesys (2.4-6+hzb2) wheezy; urgency=medium
 
   [ Dan Eichel ]
