@@ -143,23 +143,27 @@ void bootChange(void)
     GetLine	*gl = NULL;
     int actline = 0, len, abort = 0, field;
     char *line, *paramptr, intbuf[10];
-    
-    fputs("'.' = clear field;  '-' = go to previous field;  ^C = quit\n\n", stdout);
 
+    fputs("'.' = clear field;  '-' = go to previous field;  ^C = quit\n\n", stdout);
 #ifndef EVERY_LINE
-	gl = new_GetLine(BOOT_FIELD_LEN, 0); /* maxlinelen, no history */
-	gl_configure_getline(gl,0,0,0);
+    gl = new_GetLine(BOOT_FIELD_LEN - 1, 0); /* maxlinelen, no history */
+    gl_configure_getline(gl,0,0,0);
+    /* override 80x24 char default terminal size,
+       prevents ugly cursor jumps on backspace commands */
+    gl_terminal_size(gl, 200, 1);
 #endif
+
     /* read the nvram */
     readNVram(&params);
     do
     {
         field = lookup[actline]; /* get vxWorks field number */
-        paramptr = (char *) ((int) &params + (int) param_offsets[field]);
+        paramptr = (char *) (((char *) &params) + param_offsets[field]);
 	    
 #ifdef EVERY_LINE
-        gl = new_GetLine(param_lengths[field], 0); /* maxlinelen, no history */
+        gl = new_GetLine(param_lengths[field] - 1, 0); /* maxlinelen, no history */
 	    gl_configure_getline(gl,0,0,0);
+        gl_terminal_size(gl, 200, 1); /* see comment above */
 #endif
         
         if (field == 13) /* print boot flags */
@@ -196,12 +200,24 @@ void bootChange(void)
             
             } else /* string inputs */
             {
+                int showmsg = 0;
+                
                 /* adjust length according to field size */
-                len = strlen(line) - 1;
-                if (len > param_lengths[field] - 1) len = param_lengths[field] - 1;
+                len = strlen(line);
+                if ((len > 0) && (line[len - 1] == '\n')) --len; /* ignore \n */
+                if (len >= param_lengths[field])
+                {
+                    len = param_lengths[field] - 1;
+                    showmsg = 1;
+                }
 
                 strncpy(paramptr, line, len); /* save inputline */
                 paramptr[len] = 0; /* terminate string */
+                if (showmsg)
+                {
+                    printf("Max string length exceeded, truncated to '%s'\n", paramptr);
+                    fflush(stdout);
+                }
             }
             ++actline;
         }
