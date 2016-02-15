@@ -1,3 +1,12 @@
+rtems-gesys (2.4-6+hzb4) wheezy; urgency=medium
+
+  [ Dan Eichel ]
+  * boot parameter setup (bootChange command): ugly cursor jumps during editing fixed and warn message added if max string length exeeded
+
+  [ Christoph Schröder ]
+
+ -- Christoph Schröder <christoph.schroeder@helmholtz-berlin.de>  Mon, 15 Feb 2016 10:22:49 +0100
+
 rtems-gesys (2.4-6+hzb3) wheezy; urgency=medium
 
   [ Dan Eichel ]
