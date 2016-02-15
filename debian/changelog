@@ -1,3 +1,9 @@
+rtems-gesys (2.4-6+hzb5) wheezy; urgency=medium
+
+  * bootlib dependency >= 1.0-8~bpo70~hzb5
+
+ -- Christoph Schröder <christoph.schroeder@helmholtz-berlin.de>  Mon, 15 Feb 2016 12:16:32 +0100
+
 rtems-gesys (2.4-6+hzb4) wheezy; urgency=medium
 
   [ Dan Eichel ]
