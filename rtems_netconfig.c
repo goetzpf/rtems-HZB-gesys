@@ -41,7 +41,7 @@
 #include "verscheck.h"
 
 #ifndef NETWORK_TASK_PRIORITY
-#define NETWORK_TASK_PRIORITY   150	/* within EPICS' range */
+#define NETWORK_TASK_PRIORITY   50	/* within EPICS' range */
 #endif
 
 /* make publicily available for startup scripts... */
