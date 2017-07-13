@@ -151,7 +151,7 @@ include $(RTEMS_CUSTOM)
 include $(RTEMS_ROOT)/make/leaf.cfg
 
 ifndef XSYMS
-XSYMS = #$(RTEMS_CPU)-$(RTEMS_HOST)-xsyms
+XSYMS = #$(notdir $(exec_prefix))-xsyms
 endif
 
 
@@ -396,7 +396,7 @@ all: bspcheck gc-check libnms ${ARCH} $(SRCS) $(PGMS)
 $(ARCH)/init.o: builddate.c pathcheck.c ctrlx.c
 
 ifndef OBJDUMP
-OBJDUMP=$(RTEMS_CPU)-$(RTEMS_HOST)-objdump
+OBJDUMP=$(notdir $(exec_prefix))-objdump
 endif
 
 builddate.c: $(filter-out $(ARCH)/init.o $(ARCH)/allsyms.o,$(OBJS)) Makefile
@@ -420,7 +420,7 @@ pairxtract.c:	nvram/pairxtract.c
 ATTRIBUTES = gnuAttributes
 # DIY: Makefile.inc doesn't define this per BSP :-(
 ifndef READELF
-READELF =$(RTEMS_CPU)-$(RTEMS_HOST)-readelf
+READELF =$(notdir $(exec_prefix))-readelf
 endif
 define extract-objattrs
 	$(READELF) -x.gnu.attributes $@ 2> /dev/null | sed \
