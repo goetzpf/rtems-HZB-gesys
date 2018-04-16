@@ -24,6 +24,41 @@
 #include <bsp/NVRAMaccess.h>
 #include "bootParams.h"
 
+static const size_t param_lengths[] = {
+    BOOT_DEV_LEN,
+    BOOT_HOST_LEN,
+    BOOT_HOST_LEN,
+    BOOT_TARGET_ADDR_LEN,
+    BOOT_TARGET_ADDR_LEN,
+    BOOT_ADDR_LEN,
+    BOOT_ADDR_LEN,
+    BOOT_FILE_LEN,
+    BOOT_FILE_LEN,
+    BOOT_USR_LEN,
+    BOOT_PASSWORD_LEN,
+    BOOT_OTHER_LEN,
+    4,
+    4,
+    4
+};
+
+static const size_t param_offsets[] = {
+    offsetof(BOOT_PARAMS, bootDev),
+    offsetof(BOOT_PARAMS, hostName),
+    offsetof(BOOT_PARAMS, targetName),
+    offsetof(BOOT_PARAMS, ead),
+    offsetof(BOOT_PARAMS, bad),
+    offsetof(BOOT_PARAMS, had),
+    offsetof(BOOT_PARAMS, gad),
+    offsetof(BOOT_PARAMS, bootFile),
+    offsetof(BOOT_PARAMS, startupScript),
+    offsetof(BOOT_PARAMS, usr),
+    offsetof(BOOT_PARAMS, passwd),
+    offsetof(BOOT_PARAMS, other),
+    offsetof(BOOT_PARAMS, procNum),
+    offsetof(BOOT_PARAMS, flags),
+    offsetof(BOOT_PARAMS, unitNum)
+};
 
 /*+**************************************************************************
  *  lookup table: dispatch prompt to BOOT_PARAMS field
@@ -49,7 +84,7 @@ static const size_t lookup[] = {
 /*+**************************************************************************
  *  menu strings used by bootShow and bootChange
  **************************************************************************-*/
-static const char *prompts[MAX_LINES] =
+static const char *prompts[] =
 {
     "boot device          : ",
     "unit number          : ",
@@ -69,6 +104,7 @@ static const char *prompts[MAX_LINES] =
 /*    "other (o)            : " */
     "NFS [server:]mnt (o) : "
 };
+#define MAX_LINES (sizeof(prompts)/sizeof(*prompts))
 
 /*+**************************************************************************
  *  boot flags meaning
