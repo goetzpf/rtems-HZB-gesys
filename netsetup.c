@@ -77,7 +77,7 @@ int gen_network_setup(struct rtems_bsdnet_config *cfg, struct rtems_bsdnet_ifcon
     if ((cptr = strchr(params.ead, ':')) != NULL) /* subnet mask found */
     {
         *cptr++ = 0; /* split inetaddr and subnet mask */
-        subnetmask = (uint32_t) bootlib_atoul(cptr);
+        subnetmask = strtoul(cptr, NULL, 16);
     } else subnetmask = DEFAULT_SUBNETMASK; /* default: 255.255.255.0 */
     
 
